@@ -4,7 +4,7 @@ import html2text
 import re
 from crewai.agent import Agent
 from crewai.project.annotations import agent
-from crewai_tools.tools.base_tool import BaseTool
+from crewai.tools import BaseTool
 from typing import Any
 from typing import Optional
 from typing import Type
@@ -62,8 +62,6 @@ class SEC10KTool(RagTool):
             content = self.get_10k_url_content(stock_name)
             if content:
                 self.add(content)
-                # print("exit init")
-                # exit()
                 self.description = f"A tool that can be used to semantic search a query from {stock_name}'s latest 10-K SEC form's content as a txt file."
                 self.args_schema = FixedSEC10KToolSchema
                 self._generate_description()
