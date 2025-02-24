@@ -16,12 +16,10 @@ crewai_tools = ">=0.5.0"
 pandas = ">=2.2.3"
 pydantic = "*"
 sec_api = "*"
-embedchain = ">=0.1.113,<0.2.0"
+embedchain = ">=0.1.114"
 requests = "*"
 html2text = "*"
 python-dotenv = "*"
-langchain-core = ">=0.1.18" 
-langsmith = ">=0.1.17,<0.2.0"
 
 [tool.poetry.dependencies.naptha-sdk]
 git = "https://github.com/napthaAI/naptha-sdk.git"
