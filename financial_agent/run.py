@@ -4,7 +4,7 @@ import html2text
 import re
 from crewai.agent import Agent
 from crewai.project.annotations import agent
-from crewai.tools import BaseTool
+from crewai.tools.base_tool import BaseTool
 from typing import Any
 from typing import Optional
 from typing import Type
