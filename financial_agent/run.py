@@ -15,7 +15,6 @@ from embedchain.models.data_type import DataType
 from pydantic.v1.fields import Field
 from crewai_tools.tools.website_search.website_search_tool import WebsiteSearchTool
 from crewai_tools.tools.scrape_website_tool.scrape_website_tool import ScrapeWebsiteTool
-from crewai import Task
 from dotenv import load_dotenv
 from typing import Dict
 from naptha_sdk.schemas import *
@@ -25,7 +24,6 @@ from financial_agent.schemas import InputSchema
 
 logger = get_logger(__name__)
 load_dotenv()
-
 class CalculatorTool(BaseTool):
     name: str = "Calculator tool"
     description: str = (
@@ -36,6 +34,7 @@ class CalculatorTool(BaseTool):
         # Implementation goes here
         return eval(operation)
 
+
 class FixedSEC10KToolSchema(BaseModel):
     """Input for SEC10KTool."""
     search_query: str = Field(
@@ -43,11 +42,13 @@ class FixedSEC10KToolSchema(BaseModel):
         description="Mandatory query you would like to search from the 10-K report",
     )
 
+
 class SEC10KToolSchema(FixedSEC10KToolSchema):
     """Input for SEC10KTool."""
     stock_name: str = Field(
         ..., description="Mandatory valid stock name you would like to search"
     )
+
 
 class SEC10KTool(RagTool):
     name: str = "Search in the specified 10-K form"
@@ -62,6 +63,8 @@ class SEC10KTool(RagTool):
             content = self.get_10k_url_content(stock_name)
             if content:
                 self.add(content)
+                # print("exit init")
+                # exit()
                 self.description = f"A tool that can be used to semantic search a query from {stock_name}'s latest 10-K SEC form's content as a txt file."
                 self.args_schema = FixedSEC10KToolSchema
                 self._generate_description()
@@ -114,6 +117,7 @@ class SEC10KTool(RagTool):
     def _run(self, search_query: str, **kwargs: Any) -> Any:
         return super()._run(query=search_query, **kwargs)
 
+
 class FixedSEC10QToolSchema(BaseModel):
     """Input for SEC10QTool."""
     search_query: str = Field(
@@ -121,11 +125,13 @@ class FixedSEC10QToolSchema(BaseModel):
         description="Mandatory query you would like to search from the 10-Q report",
     )
 
+
 class SEC10QToolSchema(FixedSEC10QToolSchema):
     """Input for SEC10QTool."""
     stock_name: str = Field(
         ..., description="Mandatory valid stock name you would like to search"
     )
+
 
 class SEC10QTool(RagTool):
     name: str = "Search in the specified 10-Q form"
@@ -193,7 +199,6 @@ class SEC10QTool(RagTool):
     def _run(self, search_query: str, **kwargs: Any) -> Any:
         return super()._run(query=search_query, **kwargs)
 
-agents_config = {'financial_analyst': {'role': 'The Best Financial Analyst\n', 'goal': 'Impress all customers with your financial data and market trends analysis\n', 'backstory': 'The most seasoned financial analyst with lots of expertise in stock market analysis and investment strategies that is working for a super important customer.\n'}, 'research_analyst': {'role': 'Staff Research Analyst\n', 'goal': 'Being the best at gathering, interpreting data and amazing your customer with it\n', 'backstory': "Known as the BEST research analyst, you're skilled in sifting through news, company announcements, and market sentiments. Now you're working on a super important customer.\n"}, 'investment_advisor': {'role': 'Private Investment Advisor\n', 'goal': 'Impress your customers with full analyses over stocks and complete investment recommendations\n', 'backstory': "You're the most experienced investment advisor and you combine various analytical insights to formulate strategic investment advice. You are now working for a super important customer you need to impress.\n"}}
 
 def financial_agent() -> Agent:
     return Agent(
@@ -208,12 +213,22 @@ def financial_agent() -> Agent:
         ]
     )
 
+import yaml
+from pathlib import Path
+
+# Load agents_config from YAML file
+config_path = "financial_agent/config/agents.yaml"
+with open(config_path, 'r') as f:
+    agents_config = yaml.safe_load(f)
+
 def run(module_run: Dict, *args, **kwargs):
     """
-    Modified run function that creates and executes the financial agent.
+    Modified run function that creates and executes the agent.
     If 'func_name' is 'financial_agent', we build the agent and run it
     with the 'description' provided in func_input_data.
     """
+    from crewai import Task
+
     # Parse the input schema
     module_run = AgentRunInput(**module_run)
     module_run.inputs = InputSchema(**module_run.inputs)
@@ -223,7 +238,7 @@ def run(module_run: Dict, *args, **kwargs):
     if not func_to_call:
         raise ValueError(f"Function '{module_run.inputs.func_name}' not found.")
 
-    # If func_name requests 'financial_agent', create and run the agent
+    # If func_name requests 'agent_name', create and run the agent
     if module_run.inputs.func_name == "financial_agent":
         the_agent = financial_agent()
         user_question = module_run.inputs.func_input_data.get("description", "")
@@ -231,7 +246,7 @@ def run(module_run: Dict, *args, **kwargs):
         if not user_question:
             return {"error": "No question provided in func_input_data['description']."}
 
-        # Create a task for the agent with expected_output
+        # Create a task for the agent
         task = Task(
             description=user_question,
             expected_output=expected_output,
@@ -241,9 +256,8 @@ def run(module_run: Dict, *args, **kwargs):
 
         # Execute the task
         return the_agent.execute_task(task)
-
     else:
-        # Fallback: if there's no direct match or we want to run other functions
+        # Fallback for other functions
         import inspect
         sig = inspect.signature(func_to_call)
         if len(sig.parameters) == 0:
